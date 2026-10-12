@@ -98,6 +98,31 @@ def say_read(m):
         word = "reed"
     return (m.group(1) or "") + word
 
+# "live" is a heteronym too. In replies it's mostly the adjective ("lyve": "it's live", "live reload"),
+# so that's the default; the verb ("liv") is guessed from a subject or modal before it, or a
+# preposition after it ("the helpers live in utils", "where it should live"). After "to" it's the
+# verb only at the end of a clause ("needs to live."), not before a noun ("switch to live data").
+LIVE_ADJ_BEFORE = {"is", "are", "was", "were", "be", "been", "being", "go", "goes", "going", "went",
+                   "gone", "it's", "that's", "they're", "we're", "you're", "now", "still", "already"}
+LIVE_VERB_BEFORE = {"i", "we", "you", "they", "it", "who", "will", "would", "can", "could", "should", "must",
+                    "may", "might", "do", "does", "don't", "doesn't", "didn't", "won't", "can't", "shouldn't",
+                    "people", "users", "files", "helpers", "tests"}
+LIVE_VERB_AFTER = {"in", "inside", "on", "under", "alongside", "with", "next", "there", "here", "within"}
+
+def say_live(m):
+    before = (m.group(1) or "").strip().lower().replace("’", "'")
+    after = (m.group(3) or "").strip().lower()
+    word = m.group(2)
+    if before in LIVE_ADJ_BEFORE:
+        spoken = "lyve"
+    elif before in LIVE_VERB_BEFORE or after in LIVE_VERB_AFTER or (before == "to" and not after):
+        spoken = "live"
+    else:
+        spoken = "lyve"
+    if word[0].isupper():
+        spoken = spoken.capitalize()
+    return (m.group(1) or "") + spoken + (m.group(3) or "")
+
 # Spoken when an AskUserQuestion prompt opens mid-turn, varied so it doesn't sound canned. The
 # prompt's question itself isn't read; it's on screen.
 HEADS_UP = [
@@ -493,6 +518,7 @@ def clean(line):
     for pattern, spoken in PRONUNCIATIONS:
         line = re.sub(pattern, spoken, line, flags=re.IGNORECASE)
     line = re.sub(r"(\b[\w'’]+\s+)?\bread\b", say_read, line, flags=re.IGNORECASE)
+    line = re.sub(r"(\b[\w'’]+\s+)?\b(live)\b((?:\s+[\w'’]+)?)", say_live, line, flags=re.IGNORECASE)
     return line
 
 

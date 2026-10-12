@@ -377,6 +377,15 @@ class Summarize(Base):
         self.assertIn("version 4.1", out)
         self.assertIn("2 point oh", out)
 
+    def test_live_heteronym(self):
+        clean = self.ra.clean
+        self.assertEqual(clean("The demo is live now."), "The demo is lyve now.")
+        self.assertEqual(clean("Live reload works."), "Lyve reload works.")
+        self.assertEqual(clean("Switch to live data."), "Switch to lyve data.")
+        self.assertEqual(clean("The helpers live in utils."), "The helpers live in utils.")
+        self.assertEqual(clean("Where should it live?"), "Where should it live?")
+        self.assertEqual(clean("The config lives in scripts."), "The config lives in scripts.")
+
     def test_no_length_cap(self):
         text = " ".join(f"Sentence number {i} is here." for i in range(400))
         self.assertGreater(len(self.ra.summarize(text)), 5000)
