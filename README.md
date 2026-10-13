@@ -8,6 +8,7 @@ A Claude Code plugin that reads Claude's replies out loud, so you can look away 
 - **Acknowledgment:** a beat after you send a prompt, it reacts out loud in a sentence or two, so there's no dead air. The line comes from Claude Haiku (through `claude -p`, on your Claude login); if Haiku is slow or missing, from a local [Ollama](https://ollama.com) model; otherwise it's a canned one.
 - **Updates:** on long tasks, it reads what Claude last wrote between tool calls (each line once), but only after 20 seconds of quiet, so short turns stay quiet.
 - **Questions:** when an `AskUserQuestion` prompt opens, it gives a short heads-up.
+- **Approvals:** when a permission prompt is waiting for you, it says so.
 - **Voice:** a warm [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) server if one is running, otherwise the system voice: `say` on macOS, `spd-say` or `espeak` on Linux. Or [ElevenLabs](https://elevenlabs.io), with your own API key. A new line waits for the one playing to finish, unless you turn on `interrupt`.
 
 Scheduled tasks and subagents are never read aloud.

@@ -10,6 +10,8 @@ session. `/read-aloud updates|reactions on|off`, `/read-aloud speed <0.5-2.0>` a
                      length that fits); a rule-based cut if Haiku is slow or missing
   UserPromptSubmit   a short spoken reaction, so there's no dead air while Claude thinks (reactions)
   PreToolUse         a heads-up when an AskUserQuestion prompt opens (the question isn't read)
+  PermissionRequest  a heads-up when a permission prompt is waiting for approval; Notification
+  Notification       (permission_prompt) is a backup for hosts that don't send PermissionRequest
   PostToolUse        on long tasks, what Claude last wrote between tool calls, once it's been
                      quiet READ_ALOUD_PROGRESS_GAP seconds (default 20); off unless `updates on`
 
@@ -110,6 +112,18 @@ HEADS_UP = [
     "When you have a minute, I've got a question.",
     "Need your input on something.",
 ]
+# Spoken when a permission prompt is waiting for approval. The tool and its input are on screen.
+APPROVAL = [
+    "Need your OK on something.",
+    "Waiting on your approval.",
+    "Can you approve something for me?",
+    "I need a thumbs up before I go on.",
+    "Need your sign-off on this one.",
+    "Quick approval when you get a sec.",
+]
+# PermissionRequest and Notification both fire for one prompt; heads-ups this close together are one.
+APPROVAL_STAMP = os.path.expanduser("~/.claude/read-aloud.approval-at")
+APPROVAL_GAP = 10
 # Spoken the moment a prompt is sent, so there's no dead air while Claude thinks.
 ACKS = [
     "On it.",
@@ -1001,6 +1015,23 @@ def progress(event):
     speak(line, "progress")
 
 
+def approval():
+    """A heads-up that a permission prompt is waiting, once per prompt."""
+    os.makedirs(os.path.dirname(APPROVAL_STAMP), exist_ok=True)
+    with open(APPROVAL_STAMP, "a+") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)  # both hooks land at once; only one of them speaks
+        f.seek(0)
+        try:
+            if time.time() - float(f.read() or 0) < APPROVAL_GAP:
+                return
+        except ValueError:
+            pass
+        f.seek(0)
+        f.truncate()
+        f.write(str(time.time()))
+    speak(pick(APPROVAL, "approval"), "question")
+
+
 def spoke_since(t):
     try:
         return float(_read(LAST_SPOKE)) > t
@@ -1027,6 +1058,8 @@ def main():
     if hook == "PreToolUse":  # AskUserQuestion: a heads-up, not the question
         speak(pick(HEADS_UP, "heads-up"), "question")
         return
+    if hook in ("PermissionRequest", "Notification"):
+        return approval()
     if hook == "PostToolUse":
         return progress(event)
     if hook == "UserPromptSubmit":  # acknowledge right away, before Claude starts thinking

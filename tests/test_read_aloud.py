@@ -451,6 +451,19 @@ class Progress(Base):
         self.assertEqual(self.said, [])
 
 
+class Approval(Base):
+    def test_speaks_once_per_prompt(self):
+        self.ra.approval()  # PermissionRequest
+        self.ra.approval()  # Notification for the same prompt
+        self.assertEqual(len(self.said), 1)
+        self.assertEqual(self.said[0][0], "question")
+        self.assertIn(self.said[0][1], self.ra.APPROVAL)
+        with open(self.ra.APPROVAL_STAMP, "w") as f:
+            f.write(str(time.time() - 60))
+        self.ra.approval()  # a later prompt
+        self.assertEqual(len(self.said), 2)
+
+
 class QuickReply(Base):
     def test_filters(self):
         usable = self.ra._usable
